@@ -43,7 +43,8 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "movie-events:1:1,user-events:1:1,payment-events:1:1"
+      # Добавление топиков для Events Service
+      KAFKA_CREATE_TOPICS: "users-events:1:1,movies-events:1:1,payments-events:1:1"
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -82,44 +83,45 @@ services:
     networks:
       - cinemaabyss-network
 
-  # Events Microservice
-  events-service:
-    build:
-      context: ./src/microservices/events
-      dockerfile: Dockerfile
-    container_name: cinemaabyss-events-service
-    depends_on:
-      - postgres
-      - kafka
-    ports:
-      - "8082:8082"
-    environment:
-      PORT: 8082
-      KAFKA_BROKERS: kafka:9092
-    networks:
-      - cinemaabyss-network
+---
 
-  # Proxy Service (API Gateway)
+  events:
+  build:
+    context: ./src/microservices/events
+    dockerfile: Dockerfile
+  container_name: cinemaabyss-events-service
+  depends_on:
+    - kafka
+  ports:
+    - "3001:3001"
+  environment:
+    KAFKA_BROKERS: kafka:9092
+    PORT: 3001
+  networks:
+    - cinemaabyss-network
+
+
+---
+
   proxy-service:
-    build:
-      context: ./src/microservices/proxy
-      dockerfile: Dockerfile
-    container_name: cinemaabyss-proxy-service
-    depends_on:
-      - monolith
-      - movies-service
-      - events-service
-    ports:
-      - "8000:8000"
-    environment:
-      PORT: 8000
-      MONOLITH_URL: http://monolith:8080
-      MOVIES_SERVICE_URL: http://movies-service:8081
-      EVENTS_SERVICE_URL: http://events-service:8082
-      GRADUAL_MIGRATION: "true"
-      MOVIES_MIGRATION_PERCENT: "50"
-    networks:
-      - cinemaabyss-network
+  build:
+    context: ./src/microservices/proxy
+    dockerfile: Dockerfile
+  container_name: cinemaabyss-proxy-service
+  depends_on:
+    - monolith
+    - movies-service
+    - events-service
+  ports:
+    - "8000:3000"
+  environment:
+    PORT: 3000
+    MONOLITH_HOST: monolith:8080
+    MOVIE_MICROSERVICE_HOST: movies-service:8081
+    EVENTS_MICROSERVICE_HOST: events:3001
+    MOVIE_CUTOVER_PERCENT: "0.0"
+  networks:
+    - cinemaabyss-network
 
   # Kafka UI for monitoring Kafka
   kafka-ui:

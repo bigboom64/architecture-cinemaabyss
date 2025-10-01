@@ -1,0 +1,13 @@
+{
+  "name": "proxy-service",
+  "version": "1.0.0",
+  "description": "API Gateway / Proxy Service для CinemaAbyss",
+  "main": "proxy-server.js",
+  "scripts": {
+    "start": "node proxy-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6"
+  }
+}
