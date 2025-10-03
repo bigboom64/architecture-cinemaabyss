@@ -25,7 +25,7 @@ services:
   # Kafka (KRaft mode, без Zookeeper)
   kafka:
     image: apache/kafka:4.0.1-rc2
-    container_name: cinemaabyss-kafka
+    container_name: kafka
     ports:
       - "9092:9092"
       - "9093:9093"
