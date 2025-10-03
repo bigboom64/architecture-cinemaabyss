@@ -1,4 +1,4 @@
-# version: '3.8'
+version: '3.8'
 
 services:
   # PostgreSQL Database
@@ -22,32 +22,30 @@ services:
     networks:
       - cinemaabyss-network
 
-  # ZooKeeper for Kafka
-  zookeeper:
-    image: zookeeper:3.9.2-jre-17
-    container_name: cinemaabyss-zookeeper
-    ports:
-      - "2181:2181"
-    networks:
-      - cinemaabyss-network
-
-  # Kafka
+  # Kafka (KRaft mode, без Zookeeper)
   kafka:
-    image: apache/kafka:4.0.1-rc2
+    image: bitnami/kafka:4.0.0
     container_name: cinemaabyss-kafka
-    depends_on:
-      - zookeeper
     ports:
       - "9092:9092"
+      - "9093:9093"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Добавление топиков для Events Service
-      KAFKA_CREATE_TOPICS: "users-events:1:1,movies-events:1:1,payments-events:1:1"
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # роли
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      # ID узла
+      KAFKA_CFG_NODE_ID: 1
+      # список контроллеров (для одного узла)
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # листенеры
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # директория логов
+      KAFKA_CFG_LOG_DIRS: /bitnami/kafka/data
+      # автоматическое создание топиков
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - kafka-data:/bitnami/kafka
     networks:
       - cinemaabyss-network
 
@@ -83,6 +81,7 @@ services:
     networks:
       - cinemaabyss-network
 
+  # Events Microservice
   events-service:
     build:
       context: ./src/microservices/events
@@ -98,6 +97,7 @@ services:
     networks:
       - cinemaabyss-network
 
+  # Proxy Service
   proxy-service:
     build:
       context: ./src/microservices/proxy
@@ -113,12 +113,12 @@ services:
       PORT: 3000
       MONOLITH_HOST: monolith:8080
       MOVIE_MICROSERVICE_HOST: movies-service:8081
-      EVENTS_MICROSERVICE_HOST: events:3001
+      EVENTS_MICROSERVICE_HOST: events-service:3001
       MOVIE_CUTOVER_PERCENT: "0.0"
     networks:
       - cinemaabyss-network
 
-  # Kafka UI for monitoring Kafka
+  # Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: cinemaabyss-kafka-ui
@@ -129,12 +129,12 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: cinemaabyss
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     networks:
       - cinemaabyss-network
 
 volumes:
   postgres-data:
+  kafka-data:
 
 networks:
   cinemaabyss-network:
