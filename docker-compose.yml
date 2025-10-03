@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   # PostgreSQL Database
@@ -24,7 +24,7 @@ services:
 
   # ZooKeeper for Kafka
   zookeeper:
-    image: wurstmeister/zookeeper:latest
+    image: zookeeper:3.9.2-jre-17
     container_name: cinemaabyss-zookeeper
     ports:
       - "2181:2181"
@@ -33,7 +33,7 @@ services:
 
   # Kafka
   kafka:
-    image: wurstmeister/kafka:2.13-2.7.0
+    image: apache/kafka:4.0.1-rc2
     container_name: cinemaabyss-kafka
     depends_on:
       - zookeeper
@@ -83,45 +83,40 @@ services:
     networks:
       - cinemaabyss-network
 
----
-
-  events:
-  build:
-    context: ./src/microservices/events
-    dockerfile: Dockerfile
-  container_name: cinemaabyss-events-service
-  depends_on:
-    - kafka
-  ports:
-    - "3001:3001"
-  environment:
-    KAFKA_BROKERS: kafka:9092
-    PORT: 3001
-  networks:
-    - cinemaabyss-network
-
-
----
+  events-service:
+    build:
+      context: ./src/microservices/events
+      dockerfile: Dockerfile
+    container_name: cinemaabyss-events-service
+    depends_on:
+      - kafka
+    ports:
+      - "3001:3001"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      PORT: 3001
+    networks:
+      - cinemaabyss-network
 
   proxy-service:
-  build:
-    context: ./src/microservices/proxy
-    dockerfile: Dockerfile
-  container_name: cinemaabyss-proxy-service
-  depends_on:
-    - monolith
-    - movies-service
-    - events-service
-  ports:
-    - "8000:3000"
-  environment:
-    PORT: 3000
-    MONOLITH_HOST: monolith:8080
-    MOVIE_MICROSERVICE_HOST: movies-service:8081
-    EVENTS_MICROSERVICE_HOST: events:3001
-    MOVIE_CUTOVER_PERCENT: "0.0"
-  networks:
-    - cinemaabyss-network
+    build:
+      context: ./src/microservices/proxy
+      dockerfile: Dockerfile
+    container_name: cinemaabyss-proxy-service
+    depends_on:
+      - monolith
+      - movies-service
+      - events-service
+    ports:
+      - "8000:3000"
+    environment:
+      PORT: 3000
+      MONOLITH_HOST: monolith:8080
+      MOVIE_MICROSERVICE_HOST: movies-service:8081
+      EVENTS_MICROSERVICE_HOST: events:3001
+      MOVIE_CUTOVER_PERCENT: "0.0"
+    networks:
+      - cinemaabyss-network
 
   # Kafka UI for monitoring Kafka
   kafka-ui:
