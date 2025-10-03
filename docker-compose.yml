@@ -31,7 +31,7 @@ services:
 
   # Kafka
   kafka:
-    image: apache/kafka:4.0.1-rc2
+    image: confluentinc/cp-kafka:7.4.0
     container_name: cinemaabyss-kafka
     depends_on:
       - zookeeper
