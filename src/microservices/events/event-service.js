@@ -4,7 +4,7 @@ const express = require('express');
 const { Kafka } = require('kafkajs');
 
 // --- Конфигурация ---
-const KAFKA_BROKERS = ['kafka:9092']; // Замените на адрес вашего Kafka
+const KAFKA_BROKERS = ['kafka:9092']; 
 const TOPICS = {
     USER: 'users-events',
     MOVIE: 'movies-events',
