@@ -58,7 +58,8 @@
 
 Необходимые тесты для проверки этого API вызываются при запуске npm run test:local из папки tests/postman 
 Приложите скриншот тестов и скриншот состояния топиков Kafka из UI http://localhost:8090 
-
+[тесты](https://github.com/bigboom64/architecture-cinemaabyss/blob/main/tests.png)
+[топики] (https://github.com/bigboom64/architecture-cinemaabyss/blob/main/topics.png)
 # Задание 3
 
 Команда начала переезд в Kubernetes для лучшего масштабирования и повышения надежности. 
