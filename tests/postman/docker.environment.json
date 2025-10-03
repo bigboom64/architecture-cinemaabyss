@@ -16,7 +16,7 @@
     },
     {
       "key": "eventsServiceUrl",
-      "value": "http://events-service:8082",
+      "value": "http://events-service:3001",
       "type": "default",
       "enabled": true
     },
