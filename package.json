@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "newman": "^6.2.1",
+    "yargs": "^18.0.0"
+  }
+}
