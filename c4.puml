@@ -1,0 +1,36 @@
+@startuml FoodCinema - Container Diagram (C4)
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title FoodCinema - Container Diagram (C4)
+
+Person(user, "Пользователь", "Клиентское приложение или браузер")
+
+System(system, "FoodCinema System") {
+
+    Container(api_gateway, "API Gateway", "Nginx / Kong / Istio Ingress", "Маршрутизирует запросы к микросервисам")
+
+    Rel(user, api_gateway, "Отправляет запросы через")
+
+    Container(user_service, "User Service", "Go", "Управление пользователями (регистрация, профиль)")
+    Container(movie_service, "Movie Service", "Go", "Управление фильмами, жанрами и рейтингами")
+    Container(payment_service, "Payment Service", "Go", "Управление платежами")
+    Container(subscription_service, "Subscription Service", "Go", "Управление подписками пользователей")
+
+    Rel(api_gateway, user_service, "Маршрутизирует API-запросы")
+    Rel(api_gateway, movie_service, "Маршрутизирует API-запросы")
+    Rel(api_gateway, payment_service, "Маршрутизирует API-запросы")
+    Rel(api_gateway, subscription_service, "Маршрутизирует API-запросы")
+
+    ContainerDb(users_db, "Users DB", "PostgreSQL", "Хранение данных пользователей")
+    Rel(user_service, users_db, "Читает/пишет")
+
+    ContainerDb(movies_db, "Movies DB", "PostgreSQL", "Хранение фильмов и жанров")
+    Rel(movie_service, movies_db, "Читает/пишет")
+
+    ContainerDb(payments_db, "Payments DB", "PostgreSQL", "Хранение информации о платежах")
+    Rel(payment_service, payments_db, "Читает/пишет")
+
+    ContainerDb(subscriptions_db, "Subscriptions DB", "PostgreSQL", "Хранение подписок")
+    Rel(subscription_service, subscriptions_db, "Читает/пишет")
+}
+@enduml
