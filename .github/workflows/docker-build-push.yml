@@ -6,6 +6,11 @@ on:
     paths:
       - 'src/**'
       - '.github/workflows/docker-build-push.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/docker-build-push.yml'
   workflow_dispatch:
   release:
     types: [published]
@@ -16,11 +21,22 @@ env:
 
 jobs:
   build-and-push:
-    name: Build and Push Images
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+
+    strategy:
+      matrix:
+        service:
+          - name: monolith
+            path: ./src/monolith
+          - name: movies-service
+            path: ./src/microservices/movies
+          - name: events-service
+            path: ./src/microservices/events
+          - name: proxy-service
+            path: ./src/microservices/proxy
 
     steps:
       - name: Checkout repository
@@ -39,62 +55,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      # =============================
-      # Monolith
-      # =============================
-      - name: Build and push Monolith image
-        uses: docker/build-push-action@v5
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          context: ./src/monolith
-          platforms: linux/amd64,linux/arm64
-          push: true
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.service.name }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/monolith:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/monolith:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
 
-      # =============================
-      # Movies Service
-      # =============================
-      - name: Build and push Movies Service image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./src/microservices/movies
+          context: ${{ matrix.service.path }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/movies-service:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/movies-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # =============================
-      # Events Service
-      # =============================
-      - name: Build and push Events Service image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./src/microservices/events
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/events-service:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/events-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # =============================
-      # Proxy Service
-      # =============================
-      - name: Build and push Proxy Service image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./src/microservices/proxy
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/proxy-service:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/proxy-service:${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
